@@ -26,17 +26,25 @@ jobs:
           python manage.py check
           python manage.py test
 
-      - name: Deploy to Azure Windows VM via WinRM
-        uses: jasonpearson/winrm-action@v1.0.0
+      - name: Azure Login
+        uses: azure/login@v1
         with:
-          hostname: ${{ secrets.AZURE_VM_HOST }}
-          username: ${{ secrets.AZURE_VM_USER }}
-          password: ${{ secrets.AZURE_VM_PASSWORD }}
-          command: |
-            if (!(Test-Path C:\inetpub\django-learner1)) { New-Item -Path C:\inetpub\django-learner1 -ItemType Directory }
-            cd C:\inetpub\django-learner1
-            if (!(Test-Path .git)) { git clone https://github.com/${{ github.repository }} . } else { git pull origin main }
-            pip install -r requirements.txt
-            python manage.py migrate --noinput
-            python manage.py collectstatic --noinput
-            nssm restart django
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Run deployment script on Azure VM
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $username = '${{ secrets.AZURE_VM_USER }}'
+            $password = ConvertTo-SecureString '${{ secrets.AZURE_VM_PASSWORD }}' -AsPlainText -Force
+            $cred = New-Object System.Management.Automation.PSCredential($username, $password)
+            Invoke-Command -ComputerName ${{ secrets.AZURE_VM_HOST }} -Credential $cred -ScriptBlock {
+              if (!(Test-Path C:\inetpub\django-learner1)) { New-Item -Path C:\inetpub\django-learner1 -ItemType Directory }
+              cd C:\inetpub\django-learner1
+              if (!(Test-Path .git)) { git clone https://github.com/${{ github.repository }} . } else { git pull origin main }
+              pip install -r requirements.txt
+              python manage.py migrate --noinput
+              python manage.py collectstatic --noinput
+              nssm restart django
+            }
+          azPSVersion: 'latest'
