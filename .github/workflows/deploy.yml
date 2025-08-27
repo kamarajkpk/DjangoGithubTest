@@ -6,37 +6,37 @@ on:
 
 jobs:
   deploy:
-  runs-on: windows-latest
+    runs-on: windows-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Run tests
-      run: |
-        python manage.py check
-        python manage.py test
-
-    - name: Deploy to Azure Windows VM via WinRM
-      uses: jasonpearson/winrm-action@v1.0.0
-      with:
-        hostname: ${{ secrets.AZURE_VM_HOST }}
-        username: ${{ secrets.AZURE_VM_USER }}
-        password: ${{ secrets.AZURE_VM_PASSWORD }}
-        command: |
-          if (!(Test-Path C:\inetpub\django-learner1)) { New-Item -Path C:\inetpub\django-learner1 -ItemType Directory }
-          cd C:\inetpub\django-learner1
-          if (!(Test-Path .git)) { git clone https://github.com/${{ github.repository }} . } else { git pull origin main }
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          python manage.py migrate --noinput
-          python manage.py collectstatic --noinput
+
+      - name: Run tests
+        run: |
+          python manage.py check
+          python manage.py test
+
+      - name: Deploy to Azure Windows VM via WinRM
+        uses: jasonpearson/winrm-action@v1.0.0
+        with:
+          hostname: ${{ secrets.AZURE_VM_HOST }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          password: ${{ secrets.AZURE_VM_PASSWORD }}
+          command: |
+            if (!(Test-Path C:\inetpub\django-learner1)) { New-Item -Path C:\inetpub\django-learner1 -ItemType Directory }
+            cd C:\inetpub\django-learner1
+            if (!(Test-Path .git)) { git clone https://github.com/${{ github.repository }} . } else { git pull origin main }
+            pip install -r requirements.txt
+            python manage.py migrate --noinput
+            python manage.py collectstatic --noinput
           nssm restart django
