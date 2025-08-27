@@ -1,0 +1,9 @@
+[Windows Service Example for Waitress]
+
+Use NSSM (https://nssm.cc/) to run Django with Waitress as a Windows service:
+
+Service name: django
+Path: C:\\path\\to\\python.exe
+Arguments: -m waitress --port=8000 githubdeploy.wsgi:application
+Startup directory: C:\\path\\to\\your\\app
+Environment file: .env (set via NSSM environment tab)
